@@ -1,0 +1,10 @@
+services:
+  api:
+    build: .
+    container_name: learning-fastapi
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+psycopg://learning_user:learning_password@host.docker.internal:5432/learning_db
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
