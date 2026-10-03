@@ -1,10 +1,11 @@
 from fastapi import Depends, FastAPI, HTTPException 
-from sqlalchemy import select 
+from sqlalchemy import select
+
 from sqlalchemy.orm import Session 
  
 from .database import Base, engine, get_db 
 from .models import Student 
-from .schemas import StudentCreate, StudentResponse 
+from .schemas import StudentCreate, StudentResponse, StudentUpdate 
  
  
 Base.metadata.create_all(bind=engine) 
@@ -61,9 +62,9 @@ def create_student(
 def get_students( 
     db: Session = Depends(get_db) 
 ): 
-    return db.scalars( 
-        select(Student) 
-    ).all() 
+    return db.scalars(
+        select(Student).order_by(Student.id)
+    ).all()
  
  
 @app.get( 
@@ -85,6 +86,45 @@ def get_student(
     return student 
  
  
+@app.patch(
+    "/students/{student_id}",
+    response_model=StudentResponse
+)
+def update_student(
+    student_id: int,
+    student: StudentUpdate,
+    db: Session = Depends(get_db)
+):
+    existing = db.get(Student, student_id)
+
+    if not existing:
+        raise HTTPException(
+            status_code=404,
+            detail="Student not found"
+        )
+
+    if student.email and student.email != existing.email:
+        email_taken = db.scalar(
+            select(Student).where(Student.email == student.email)
+        )
+
+        if email_taken:
+            raise HTTPException(
+                status_code=409,
+                detail="Email already exists"
+            )
+
+    updates = student.model_dump(exclude_unset=True)
+
+    for field, value in updates.items():
+        setattr(existing, field, value)
+
+    db.commit()
+    db.refresh(existing)
+
+    return existing
+
+
 @app.delete("/students/{student_id}") 
 def delete_student( 
     student_id: int, 

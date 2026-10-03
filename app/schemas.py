@@ -7,7 +7,12 @@ class StudentCreate(BaseModel):
     course: str 
  
  
-class StudentResponse(BaseModel): 
+class StudentUpdate(BaseModel):
+    email: str | None = None
+    course: str | None = None
+
+
+class StudentResponse(BaseModel):
     id: int 
     name: str 
     email: str 
